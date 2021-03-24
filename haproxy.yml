@@ -1,0 +1,47 @@
+- hosts: all
+  vars:
+          - mountpath: "/dvd1"
+          - destination: "/var/www/html/index.html"
+          - haproxyport: 8080
+  tasks:
+
+  - debug:
+          msg: "proxy server setup with httpd"
+  - file:
+          state: directory
+          path: "{{mountpath}}"
+  - mount: 
+          src: "/dev/cdrom"
+          path: "{{mountpath}}"
+          state: mounted
+          fstype: "iso9660"
+  - yum_repository:
+          name: "mydvd1"
+          description: "AppStream repo configuration"
+          baseurl: "/dvd1/AppStream"
+          gpgcheck: no
+  - yum_repository:
+          name: "mydvd2"
+          description: "BaseOS repo configuration"
+          baseurl: "/dvd1/BaseOS"
+          gpgcheck: no
+  - package:
+          name: "httpd"
+          state: present
+  - service:
+          name: httpd
+          state: started
+          enabled: yes
+
+- hosts: mylb
+  tasks:
+  - package:
+          name: "haproxy"
+          state: present
+  - template:
+          dest: "/etc/haproxy/haproxy.cfg"
+          src: "./haproxy.cfg"
+  - service:
+          name: "haproxy"
+          state: restarted
+          enabled: yes
